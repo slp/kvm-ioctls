@@ -48,6 +48,19 @@ impl From<NoDatamatch> for u64 {
     }
 }
 
+/// Commands for AMD SEV.
+#[repr(C)]
+pub struct SevCommand {
+    /// Sev Command ID.
+    pub code: u32,
+    /// Opaque.
+    pub data: u64,
+    /// Error.
+    pub error: u32,
+    /// File descriptor for `/dev/sev`.
+    pub fd: u32,
+}
+
 /// Wrapper over KVM VM ioctls.
 pub struct VmFd {
     vm: File,
@@ -55,6 +68,30 @@ pub struct VmFd {
 }
 
 impl VmFd {
+    /// Allows sending SEV commands through KVM.
+    ///
+    /// See the documentation for `KVM_MEMORY_ENCRYPT_OP`.
+    pub fn memory_encrypt(&self, cmd: &mut SevCommand) -> Result<()> {
+        let ret = unsafe { ioctl_with_mut_ref(self, KVM_MEMORY_ENCRYPT_OP(), cmd) };
+        if ret == 0 {
+            Ok(())
+        } else {
+            Err(errno::Error::last())
+        }
+    }
+
+    /// Registers a guest memory region which may contain encrypted data.
+    ///
+    /// See the documentation for `KVM_MEMORY_ENCRYPT_REG_REGION`.
+    pub unsafe fn memory_encrypt_reg_region(&self, enc_region: &kvm_enc_region) -> Result<()> {
+        let ret = ioctl_with_ref(self, KVM_MEMORY_ENCRYPT_REG_REGION(), enc_region);
+        if ret == 0 {
+            Ok(())
+        } else {
+            Err(errno::Error::last())
+        }
+    }
+
     /// Creates/modifies a guest physical memory slot.
     ///
     /// See the documentation for `KVM_SET_USER_MEMORY_REGION`.
