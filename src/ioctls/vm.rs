@@ -71,6 +71,7 @@ impl VmFd {
     /// Allows sending SEV commands through KVM.
     ///
     /// See the documentation for `KVM_MEMORY_ENCRYPT_OP`.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub fn memory_encrypt(&self, cmd: &mut SevCommand) -> Result<()> {
         let ret = unsafe { ioctl_with_mut_ref(self, KVM_MEMORY_ENCRYPT_OP(), cmd) };
         if ret == 0 {
@@ -83,6 +84,7 @@ impl VmFd {
     /// Registers a guest memory region which may contain encrypted data.
     ///
     /// See the documentation for `KVM_MEMORY_ENCRYPT_REG_REGION`.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub unsafe fn memory_encrypt_reg_region(&self, enc_region: &kvm_enc_region) -> Result<()> {
         let ret = ioctl_with_ref(self, KVM_MEMORY_ENCRYPT_REG_REGION(), enc_region);
         if ret == 0 {
